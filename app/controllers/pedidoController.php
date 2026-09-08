@@ -1,6 +1,7 @@
 <?php
 
     use App\models\pedidoModel;
+    use App\models\medidaModel;
 
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
@@ -12,6 +13,7 @@
     }
 
     $object = new pedidoModel();
+    $medidaModel = new medidaModel();
 
     if (isset($_GET['type'])) {
 
@@ -205,6 +207,7 @@
     $tasaActual   = $object->getTasaActual();
     $ivas         = $object->getIvasActivos();
     $ivaActivo    = $object->getIvaActivo();
+    $medidas      = $medidaModel->getMedidasActivas();
     $pedidoFlash  = $_SESSION['pedido_flash'] ?? null;
     unset($_SESSION['pedido_flash']);
 

@@ -9,6 +9,17 @@ use PDOException;
 class pedidoModel extends ConectDB {
     private $conex;
 
+    private $codigo_pedido;
+    private $cedula_cliente;
+    private $cedula_usuario;
+    private $fecha_pedido;
+    private $estado;
+    private $subtotal;
+    private $monto_iva;
+    private $porcentaje_iva;
+    private $monto_total;
+    private $tasa_cambio;
+
     /** @var monedaModel|null */
     private $monedaModel;
 
@@ -301,9 +312,35 @@ class pedidoModel extends ConectDB {
                       LEFT JOIN servicio s ON dp.codigo_servicio = s.codigo_servicio
                       WHERE dp.codigo_pedido = ?
                       ORDER BY dp.codigo_detalle_pedido ASC";
+            $checkStmt = $this->conex->prepare("SHOW COLUMNS FROM detalle_pedido LIKE 'codigo_media'");
+            $checkStmt->execute();
+            if ($checkStmt->rowCount() > 0) {
+                $query = "SELECT dp.*,
+                                 pi.nombre_producto,
+                                 s.nombre_servicio,
+                                 s.precio AS precio_servicio,
+                                 um.nombre AS nombre_medida,
+                                 um.abreviatura AS abreviatura_medida,
+                                 CASE
+                                     WHEN dp.codigo_producto IS NOT NULL THEN 'producto'
+                                     ELSE 'servicio'
+                                 END AS tipo
+                      FROM detalle_pedido dp
+                      LEFT JOIN producto_insumo pi ON dp.codigo_producto = pi.codigo_producto
+                      LEFT JOIN servicio s ON dp.codigo_servicio = s.codigo_servicio
+                      LEFT JOIN unidad_medida um ON dp.codigo_media = um.codigo_media
+                      WHERE dp.codigo_pedido = ?
+                      ORDER BY dp.codigo_detalle_pedido ASC";
+            }
             $stmt = $this->conex->prepare($query);
-            $stmt->execute([(int) $id]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stmt->execute([$id]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($rows as &$row) {
+                if (!isset($row['nombre_medida'])) $row['nombre_medida'] = null;
+                if (!isset($row['abreviatura_medida'])) $row['abreviatura_medida'] = null;
+                if (!isset($row['codigo_media'])) $row['codigo_media'] = null;
+            }
+            return $rows;
         } catch (PDOException $e) {
             $this->logPdoError('getItemsByPedido', $e);
             return [];
@@ -312,7 +349,13 @@ class pedidoModel extends ConectDB {
 
     public function getClientesActivos() {
         try {
-            $stmt = $this->conex->prepare('SELECT cedula_cliente, nombre FROM cliente ORDER BY nombre ASC');
+            $query = 'SELECT cedula_cliente, nombre FROM cliente ORDER BY nombre ASC';
+            $checkStmt = $this->conex->prepare("SHOW COLUMNS FROM cliente LIKE 'estado'");
+            $checkStmt->execute();
+            if ($checkStmt->rowCount() > 0) {
+                $query = 'SELECT cedula_cliente, nombre FROM cliente WHERE estado = 1 ORDER BY nombre ASC';
+            }
+            $stmt = $this->conex->prepare($query);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -323,13 +366,21 @@ class pedidoModel extends ConectDB {
 
     public function getProductosActivos() {
         try {
-            $stmt = $this->conex->prepare(
-                'SELECT p.codigo_producto, p.nombre_producto, p.stock_actual,
-                        COALESCE(p.precio, 0) AS precio
-                 FROM producto_insumo p WHERE p.estado = 1 ORDER BY p.nombre_producto ASC'
-            );
+            $query = 'SELECT p.codigo_producto, p.nombre_producto, p.stock_actual FROM producto_insumo p WHERE p.estado = 1 ORDER BY p.nombre_producto ASC';
+            $checkStmt = $this->conex->prepare("SHOW COLUMNS FROM producto_insumo LIKE 'precio'");
+            $checkStmt->execute();
+            if ($checkStmt->rowCount() > 0) {
+                $query = 'SELECT p.codigo_producto, p.nombre_producto, p.stock_actual,
+                                 COALESCE(p.precio, 0) AS precio
+                          FROM producto_insumo p WHERE p.estado = 1 ORDER BY p.nombre_producto ASC';
+            }
+            $stmt = $this->conex->prepare($query);
             $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            if (!isset($rows[0]['precio'])) {
+                foreach ($rows as &$r) { $r['precio'] = 0; }
+            }
+            return $rows;
         } catch (PDOException $e) {
             $this->logPdoError('getProductosActivos', $e);
             return [];
@@ -488,10 +539,21 @@ class pedidoModel extends ConectDB {
     }
 
     private function insertarDetallesYDescontarStock(int $codigoPedido, array $items): float {
-        $stmtDetalle = $this->conex->prepare(
-            'INSERT INTO detalle_pedido (codigo_pedido, codigo_producto, codigo_servicio, cantidad, precio_venta, subtotal)
-             VALUES (?, ?, ?, ?, ?, ?)'
-        );
+        $checkStmt = $this->conex->prepare("SHOW COLUMNS FROM detalle_pedido LIKE 'codigo_media'");
+        $checkStmt->execute();
+        $hasCodigoMedia = $checkStmt->rowCount() > 0;
+
+        if ($hasCodigoMedia) {
+            $stmtDetalle = $this->conex->prepare(
+                'INSERT INTO detalle_pedido (codigo_pedido, codigo_producto, codigo_servicio, codigo_media, cantidad, precio_venta, subtotal)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)'
+            );
+        } else {
+            $stmtDetalle = $this->conex->prepare(
+                'INSERT INTO detalle_pedido (codigo_pedido, codigo_producto, codigo_servicio, cantidad, precio_venta, subtotal)
+                 VALUES (?, ?, ?, ?, ?, ?)'
+            );
+        }
 
         $montoTotal = 0.0;
 
@@ -517,14 +579,27 @@ class pedidoModel extends ConectDB {
             $subtotal = $this->formatearMonto($cantidad * $precioVenta);
             $montoTotal += $subtotal;
 
-            $stmtDetalle->execute([
-                $codigoPedido,
-                $codigoProducto,
-                $codigoServicio,
-                $this->formatearMontoDecimal($cantidad),
-                $this->formatearMontoDecimal($precioVenta),
-                $this->formatearMontoDecimal($subtotal),
-            ]);
+            $codigoMedia = $item['codigo_media'] ?? null;
+            if ($hasCodigoMedia) {
+                $stmtDetalle->execute([
+                    $codigoPedido,
+                    $codigoProducto,
+                    $codigoServicio,
+                    $codigoMedia,
+                    $this->formatearMontoDecimal($cantidad),
+                    $this->formatearMontoDecimal($precioVenta),
+                    $this->formatearMontoDecimal($subtotal),
+                ]);
+            } else {
+                $stmtDetalle->execute([
+                    $codigoPedido,
+                    $codigoProducto,
+                    $codigoServicio,
+                    $this->formatearMontoDecimal($cantidad),
+                    $this->formatearMontoDecimal($precioVenta),
+                    $this->formatearMontoDecimal($subtotal),
+                ]);
+            }
 
             $this->descontarInventario($tipo, $codigoProducto, $codigoServicio, $cantidad, $linea);
         }

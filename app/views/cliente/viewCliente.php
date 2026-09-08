@@ -36,12 +36,13 @@
 
       <div class="bg-white rounded-[14px] shadow-sm overflow-hidden border border-gray-100">
         <table class="w-full text-left">
-          <thead class="bg-navy-dark text-white text-[0.7rem] uppercase tracking-widest">
+            <thead class="bg-navy-dark text-white text-[0.7rem] uppercase tracking-widest">
             <tr>
               <th class="px-6 py-4">Cédula</th>
               <th class="px-6 py-4">Nombre Completo</th>
               <th class="px-6 py-4">Teléfono</th>
               <th class="px-6 py-4">Correo</th>
+              <th class="px-6 py-4">Estado</th>
               <th class="px-6 py-4 text-center">Consultar</th>
             </tr>
           </thead>
@@ -51,8 +52,13 @@
                 <td class="px-6 py-4 font-black text-navy-dark"><?= $c['cedula_cliente'] ?></td>
                 <td class="px-6 py-4 uppercase font-bold text-navy-light"><?= htmlspecialchars($c['nombre']) ?></td>
                 <td class="px-6 py-4"><?= htmlspecialchars($c['telefono']) ?></td>
-                <td class="px-6 py-4 text-gray-500"><?= htmlspecialchars($c['correo']) ?></td>
-                <td class="px-6 py-4 text-center">
+               <td class="px-6 py-4 text-gray-500"><?= htmlspecialchars($c['correo']) ?></td>
+                 <td class="px-6 py-4">
+                   <span class="px-3 py-1 rounded-full text-[0.65rem] font-black uppercase <?= ($c['estado'] ?? 1) ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600' ?>">
+                     <?= ($c['estado'] ?? 1) ? 'Activo' : 'Inactivo' ?>
+                   </span>
+                 </td>
+                 <td class="px-6 py-4 text-center">
                   <button type="button" onclick='viewDetails(<?= json_encode($c, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)' class="group relative text-orange-dk p-2 hover:bg-orange/10 rounded-lg transition-colors">
                     <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-navy-dark text-white text-[10px] px-2 py-1 rounded whitespace-nowrap pointer-events-none z-10 shadow-lg">Consultar</span>
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
@@ -60,7 +66,7 @@
                 </td>
               </tr>
             <?php endforeach; else: ?>
-              <tr><td colspan="5" class="px-6 py-10 text-center text-gray-400 font-bold italic">No hay clientes registrados.</td></tr>
+              <tr><td colspan="6" class="px-6 py-10 text-center text-gray-400 font-bold italic">No hay clientes registrados.</td></tr>
             <?php endif; ?>
           </tbody>
         </table>
@@ -140,7 +146,11 @@
           </div>
           <div class="mb-4">
             <label class="block text-xs font-black text-gray-400 uppercase mb-1">Dirección</label>
-            <textarea name="direccion" id="edit_direccion" rows="2" class="w-full px-4 py-2 bg-gray-50 border rounded-lg focus:border-orange outline-hidden font-bold"></textarea>
+            <textarea name="direccion" id="edit_direccion" rows="2" class="w-full px-4 py-2 bg-gray-50 border rounded-lg focus:border-orange outline-hidden font-black"></textarea>
+          </div>
+          <div class="flex items-center gap-2 mb-4">
+            <input type="checkbox" name="estado" id="edit_estado" class="w-4 h-4 accent-orange">
+            <label class="text-sm font-bold text-navy-dark uppercase">Activo</label>
           </div>
           <div class="flex justify-end gap-3 mt-8">
             <button type="button" onclick="closeEditModal()" class="px-6 py-2 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-lg">Cancelar</button>
@@ -166,6 +176,7 @@
           <div><p class="text-[0.65rem] font-black text-gray-400 uppercase mb-1">Teléfono</p><p id="det_telefono" class="font-semibold text-gray-700">—</p></div>
           <div><p class="text-[0.65rem] font-black text-gray-400 uppercase mb-1">Correo</p><p id="det_correo" class="font-semibold text-gray-500">—</p></div>
           <div><p class="text-[0.65rem] font-black text-gray-400 uppercase mb-1">Dirección</p><p id="det_direccion" class="font-semibold text-gray-600 text-sm">—</p></div>
+          <div><p class="text-[0.65rem] font-black text-gray-400 uppercase mb-1">Estado</p><p id="det_estado" class="font-bold">—</p></div>
         </div>
         <div class="modal-footer bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t">
           <button type="button" id="btnDetalleEliminar" class="px-5 py-2 text-sm font-black text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors">Eliminar</button>
@@ -191,6 +202,7 @@
       document.getElementById('det_telefono').textContent = data.telefono || '—';
       document.getElementById('det_correo').textContent = data.correo || '—';
       document.getElementById('det_direccion').textContent = data.direccion || '—';
+      document.getElementById('det_estado').textContent = data.estado == 1 ? 'Activo' : 'Inactivo';
       document.getElementById('btnDetalleEditar').onclick = () => { closeDetalleModal(); openEditModal(currentRecord); };
       document.getElementById('btnDetalleEliminar').onclick = () => confirmDelete(currentRecord.cedula_cliente);
       document.getElementById('modalDetalle').classList.remove('hidden');
@@ -207,6 +219,7 @@
         document.getElementById('edit_telefono').value = data.telefono;
         document.getElementById('edit_correo').value = data.correo;
         document.getElementById('edit_direccion').value = data.direccion;
+        document.getElementById('edit_estado').checked = data.estado == 1;
         document.getElementById('modalEditCliente').classList.remove('hidden');
     }
 
@@ -215,7 +228,7 @@
     }
 
     function confirmDelete(id) {
-      if(confirm('¿Desea eliminar definitivamente este cliente?')) {
+      if(confirm('¿Desea desactivar este cliente?')) {
         const f = new FormData();
         f.append('deleteCliente', 'true');
         f.append('idcliente', id);

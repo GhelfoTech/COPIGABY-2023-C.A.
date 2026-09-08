@@ -26,6 +26,7 @@
 
         elseif ($_GET['type'] === 'update') {
             if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_actual'])) {
+                $_POST['estado'] = isset($_POST['estado']) ? 1 : 0;
                 $object->updateCliente($_POST['id_actual'], $_POST);
                 header("Location: ?url=cliente");
                 exit();

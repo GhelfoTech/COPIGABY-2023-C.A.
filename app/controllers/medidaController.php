@@ -16,7 +16,8 @@
         if ($_GET['type'] === 'register') {
             if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nombre'])) {
                 $abreviatura = trim($_POST['abreviatura'] ?? '');
-                $object->addMedida($_POST['nombre'], $abreviatura ?: null);
+                $cantidadUnidad = isset($_POST['cantidad_unidad']) ? max(1, (int) $_POST['cantidad_unidad']) : 1;
+                $object->addMedida($_POST['nombre'], $abreviatura ?: null, $cantidadUnidad);
                 header("Location: ?url=medida");
                 exit();
             }
@@ -28,7 +29,8 @@
             if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['codigo_media'])) {
                 $estado = isset($_POST['estado']) ? 1 : 0;
                 $abreviatura = trim($_POST['abreviatura'] ?? '');
-                $object->updateMedida((int) $_POST['codigo_media'], $_POST['nombre'], $abreviatura ?: null, $estado);
+                $cantidadUnidad = isset($_POST['cantidad_unidad']) ? max(1, (int) $_POST['cantidad_unidad']) : 1;
+                $object->updateMedida((int) $_POST['codigo_media'], $_POST['nombre'], $abreviatura ?: null, $cantidadUnidad, $estado);
                 header("Location: ?url=medida");
                 exit();
             }
@@ -53,5 +55,5 @@
         }
     }
 
-    $medidas = $object->getAllMedidas();
+    $medidas = $object->getAllMedidasFull();
     include 'app/views/medida/viewMedida.php';

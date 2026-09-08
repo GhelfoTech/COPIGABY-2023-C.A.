@@ -36,35 +36,37 @@
 
       <div class="bg-white rounded-custom shadow-sm overflow-hidden border border-gray-100">
         <table class="w-full text-left">
-           <thead class="bg-navy-dark text-white text-[0.7rem] uppercase tracking-widest">
-             <tr>
-               <th class="px-6 py-4">Código</th>
-               <th class="px-6 py-4">Nombre</th>
-               <th class="px-6 py-4">Abreviatura</th>
-               <th class="px-6 py-4">Estado</th>
-               <th class="px-6 py-4 text-center">Consultar</th>
-             </tr>
-           </thead>
-           <tbody class="text-gray-700 font-semibold text-sm divide-y">
-             <?php foreach ($medidas as $m): ?>
-               <tr class="hover:bg-gray-50/80 transition-colors">
-                 <td class="px-6 py-4 font-black text-navy-dark">#<?= str_pad($m['codigo_media'], 3, '0', STR_PAD_LEFT) ?></td>
-                 <td class="px-6 py-4 uppercase"><?= htmlspecialchars($m['nombre']) ?></td>
-                 <td class="px-6 py-4 font-bold text-navy-light"><?= htmlspecialchars($m['abreviatura'] ?? '—') ?></td>
-                 <td class="px-6 py-4">
-                   <span class="px-3 py-1 rounded-full text-[0.65rem] font-black uppercase <?= $m['estado'] ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600' ?>">
-                     <?= $m['estado'] ? 'Activo' : 'Inactivo' ?>
-                   </span>
-                 </td>
-                 <td class="px-6 py-4 text-center">
-                   <button type="button" onclick='viewDetails(<?= json_encode($m, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)' class="group relative text-orange-dk p-2 hover:bg-orange/10 rounded-lg transition-colors">
-                     <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-navy-dark text-white text-[10px] px-2 py-1 rounded whitespace-nowrap pointer-events-none z-10 shadow-lg">Ver Detalle</span>
-                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                   </button>
-                 </td>
-               </tr>
-             <?php endforeach; ?>
-           </tbody>
+<thead class="bg-navy-dark text-white text-[0.7rem] uppercase tracking-widest">
+              <tr>
+                <th class="px-6 py-4">Código</th>
+                <th class="px-6 py-4">Nombre</th>
+                <th class="px-6 py-4">Abreviatura</th>
+                <th class="px-6 py-4">Unidades por Caja</th>
+                <th class="px-6 py-4">Estado</th>
+                <th class="px-6 py-4 text-center">Consultar</th>
+              </tr>
+            </thead>
+            <tbody class="text-gray-700 font-semibold text-sm divide-y">
+              <?php foreach ($medidas as $m): ?>
+                <tr class="hover:bg-gray-50/80 transition-colors">
+                  <td class="px-6 py-4 font-black text-navy-dark">#<?= str_pad($m['codigo_media'], 3, '0', STR_PAD_LEFT) ?></td>
+                  <td class="px-6 py-4 uppercase"><?= htmlspecialchars($m['nombre']) ?></td>
+                  <td class="px-6 py-4 font-bold text-navy-light"><?= htmlspecialchars($m['abreviatura'] ?? '—') ?></td>
+                  <td class="px-6 py-4 text-center font-bold"><?= (int) ($m['cantidad_unidad'] ?? 1) ?></td>
+                  <td class="px-6 py-4">
+                    <span class="px-3 py-1 rounded-full text-[0.65rem] font-black uppercase <?= $m['estado'] ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600' ?>">
+                      <?= $m['estado'] ? 'Activo' : 'Inactivo' ?>
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-center">
+                    <button type="button" onclick='viewDetails(<?= json_encode($m, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)' class="group relative text-orange-dk p-2 hover:bg-orange/10 rounded-lg transition-colors">
+                      <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-navy-dark text-white text-[10px] px-2 py-1 rounded whitespace-nowrap pointer-events-none z-10 shadow-lg">Ver Detalle</span>
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    </button>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
         </table>
       </div>
     </main>
@@ -86,6 +88,10 @@
           <div class="mb-4">
             <label class="block text-xs font-black text-gray-400 uppercase mb-1">Abreviatura</label>
              <input type="text" name="abreviatura" maxlength="10" class="w-full px-4 py-2 bg-gray-50 border rounded-lg focus:border-orange outline-none font-bold text-sm" placeholder="Kg">
+          </div>
+          <div class="mb-4">
+             <label class="block text-xs font-black text-gray-400 uppercase mb-1">Unidades por Caja <span class="text-xs text-gray-400 font-normal">(ej: 12 para docena, 1 para unidad suelta)</span></label>
+             <input type="number" name="cantidad_unidad" min="1" value="1" required class="w-full px-4 py-2 bg-gray-50 border rounded-lg focus:border-orange outline-none font-bold text-sm">
           </div>
           <div class="flex justify-end gap-3 mt-8">
             <button type="button" onclick="toggleModal()" class="px-6 py-2 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-lg">Cancelar</button>
@@ -114,6 +120,10 @@
             <label class="block text-xs font-black text-gray-400 uppercase mb-1">Abreviatura</label>
              <input type="text" name="abreviatura" id="edit_abreviatura" maxlength="10" class="w-full px-4 py-2 bg-gray-50 border rounded-lg focus:border-orange outline-none font-bold text-sm" placeholder="Kg">
           </div>
+          <div class="mb-4">
+             <label class="block text-xs font-black text-gray-400 uppercase mb-1">Unidades por Caja</label>
+             <input type="number" name="cantidad_unidad" id="edit_cantidad_unidad" min="1" value="1" required class="w-full px-4 py-2 bg-gray-50 border rounded-lg focus:border-orange outline-none font-bold text-sm">
+          </div>
           <div class="flex items-center gap-2 mb-4">
               <input type="checkbox" name="estado" id="edit_estado" class="w-4 h-4 accent-orange">
               <label class="text-sm font-bold text-navy-dark uppercase tracking-tight">Activo</label>
@@ -140,6 +150,7 @@
           <div><p class="text-[0.65rem] font-black text-gray-400 uppercase mb-1">Código</p><p id="det_codigo" class="font-black text-navy-dark">—</p></div>
           <div><p class="text-[0.65rem] font-black text-gray-400 uppercase mb-1">Nombre</p><p id="det_nombre" class="font-bold uppercase">—</p></div>
           <div><p class="text-[0.65rem] font-black text-gray-400 uppercase mb-1">Abreviatura</p><p id="det_abreviatura" class="font-bold text-navy-light">—</p></div>
+          <div><p class="text-[0.65rem] font-black text-gray-400 uppercase mb-1">Unidades por Caja</p><p id="det_cantidad_unidad" class="font-bold text-navy-light">1</p></div>
           <div><p class="text-[0.65rem] font-black text-gray-400 uppercase mb-1">Estado</p><p id="det_estado" class="font-bold">—</p></div>
         </div>
         <div class="modal-footer bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t">
@@ -164,6 +175,7 @@
       document.getElementById('det_codigo').textContent = '#' + String(data.codigo_media).padStart(3, '0');
       document.getElementById('det_nombre').textContent = data.nombre;
       document.getElementById('det_abreviatura').textContent = data.abreviatura || '—';
+      document.getElementById('det_cantidad_unidad').textContent = (data.cantidad_unidad ?? 1);
       document.getElementById('det_estado').textContent = data.estado == 1 ? 'Activo' : 'Inactivo';
       document.getElementById('btnDetalleEditar').onclick = () => { closeDetalleModal(); openEditModal(currentRecord); };
       document.getElementById('btnDetalleEliminar').onclick = () => confirmDelete(currentRecord.codigo_media);
@@ -178,6 +190,7 @@
         document.getElementById('edit_codigo').value = data.codigo_media;
         document.getElementById('edit_nombre').value = data.nombre;
         document.getElementById('edit_abreviatura').value = data.abreviatura || '';
+        document.getElementById('edit_cantidad_unidad').value = data.cantidad_unidad ?? 1;
         document.getElementById('edit_estado').checked = (data.estado == 1);
         document.getElementById('modalEditMedida').classList.remove('hidden');
     }

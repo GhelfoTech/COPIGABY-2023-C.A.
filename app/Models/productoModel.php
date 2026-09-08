@@ -9,6 +9,17 @@ use PDOException;
 class productoModel extends ConectDB {
     private $conex;
 
+    private $codigo_producto;
+    private $nombre_producto;
+    private $codigo_categoria;
+    private $descripcion;
+    private $costo;
+    private $porcentaje_ganancia;
+    private $precio;
+    private $stock_actual;
+    private $stock_minimo;
+    private $estado;
+
     public function __construct() {
         parent::__construct();
         $this->conex = $this->getConnection();

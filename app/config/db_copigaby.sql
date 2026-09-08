@@ -79,19 +79,20 @@ CREATE TABLE `cliente` (
   `nombre` varchar(50) NOT NULL,
   `telefono` varchar(12) NOT NULL,
   `correo` varchar(50) NOT NULL,
-  `direccion` varchar(50) NOT NULL
+  `direccion` varchar(50) NOT NULL,
+  `estado` tinyint(1) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Volcado de datos para la tabla `cliente`
 --
 
-INSERT INTO `cliente` (`cedula_cliente`, `nombre`, `telefono`, `correo`, `direccion`) VALUES
-(23456654, 'MICHELLE', '04245555555', 'MICHELLE@gmail.com', 'BASIL'),
-(32137731, 'Yeilyn', '04228690511', 'Yeilyn32gmail.com', 'Andres Eloy'),
-(32345654, 'JUAN GOMEZ', '04245555555', 'JUAN@gmail.com', 'NICARAGUA'),
-(32456432, 'VICTORIA', '04245678976', 'VICTORIA@gmail.com', 'LA VICTORIA'),
-(123454321, 'RAMON', '04245555555', 'RAMON@gmail.com', 'ARGENTINA'),
+INSERT INTO `cliente` (`cedula_cliente`, `nombre`, `telefono`, `correo`, `direccion`, `estado`) VALUES
+(23456654, 'MICHELLE', '04245555555', 'MICHELLE@gmail.com', 'BASIL', 1),
+(32137731, 'Yeilyn', '04228690511', 'Yeilyn32gmail.com', 'Andres Eloy', 1),
+(32345654, 'JUAN GOMEZ', '04245555555', 'JUAN@gmail.com', 'NICARAGUA', 1),
+(32456432, 'VICTORIA', '04245678976', 'VICTORIA@gmail.com', 'LA VICTORIA', 1),
+(123454321, 'RAMON', '04245555555', 'RAMON@gmail.com', 'ARGENTINA', 1),
 (342123344, 'CAROLINA', '04245678976', 'CAROLINA@gmail.com', 'MERIDA');
 
 -- --------------------------------------------------------
@@ -192,6 +193,7 @@ CREATE TABLE `detalle_pedido` (
   `codigo_pedido` int(11) NOT NULL,
   `codigo_producto` int(11) DEFAULT NULL,
   `codigo_servicio` int(11) DEFAULT NULL,
+  `codigo_media` int(11) DEFAULT NULL,
   `cantidad` decimal(10,2) NOT NULL,
   `precio_venta` decimal(10,2) NOT NULL,
   `subtotal` decimal(10,2) NOT NULL
@@ -201,14 +203,14 @@ CREATE TABLE `detalle_pedido` (
 -- Volcado de datos para la tabla `detalle_pedido`
 --
 
-INSERT INTO `detalle_pedido` (`codigo_detalle_pedido`, `codigo_pedido`, `codigo_producto`, `codigo_servicio`, `cantidad`, `precio_venta`, `subtotal`) VALUES
-(587, 571, 76543, NULL, 2.00, 0.50, 1.00),
-(588, 571, NULL, 7, 3.00, 40.00, 120.00),
-(593, 576, 759160, NULL, 3.00, 3.00, 9.00),
-(608, 581, 759766, NULL, 2.00, 0.50, 1.00),
-(609, 581, NULL, 8, 2.00, 2500.00, 5000.00),
-(610, 580, 759765, NULL, 4.00, 0.15, 0.60),
-(611, 582, NULL, 9, 2.00, 30.00, 60.00);
+INSERT INTO `detalle_pedido` (`codigo_detalle_pedido`, `codigo_pedido`, `codigo_producto`, `codigo_servicio`, `codigo_media`, `cantidad`, `precio_venta`, `subtotal`) VALUES
+(587, 571, 76543, NULL, 21, 2.00, 0.50, 1.00),
+(588, 571, NULL, 7, NULL, 3.00, 40.00, 120.00),
+(593, 576, 759160, NULL, 21, 3.00, 3.00, 9.00),
+(608, 581, 759766, NULL, 21, 2.00, 0.50, 1.00),
+(609, 581, NULL, 8, NULL, 2.00, 2500.00, 5000.00),
+(610, 580, 759765, NULL, 21, 4.00, 0.15, 0.60),
+(611, 582, NULL, 9, NULL, 2.00, 30.00, 60.00);
 
 -- --------------------------------------------------------
 
@@ -604,6 +606,8 @@ INSERT INTO `tasa_cambio` (`codigo_tasa`, `fecha`, `monto_bolivares`) VALUES
 CREATE TABLE `unidad_medida` (
   `codigo_media` int(11) NOT NULL,
   `nombre` varchar(15) NOT NULL,
+  `abreviatura` varchar(10) DEFAULT NULL,
+  `cantidad_unidad` int(11) NOT NULL DEFAULT 1,
   `estado` tinyint(1) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -611,11 +615,11 @@ CREATE TABLE `unidad_medida` (
 -- Volcado de datos para la tabla `unidad_medida`
 --
 
-INSERT INTO `unidad_medida` (`codigo_media`, `nombre`, `estado`) VALUES
-(21, 'BULTO', 1),
-(22, 'DOCENA', 1),
-(24, 'CAJA', 1),
-(26, 'METRO', 1);
+INSERT INTO `unidad_medida` (`codigo_media`, `nombre`, `abreviatura`, `cantidad_unidad`, `estado`) VALUES
+(21, 'BULTO', 'BLT', 1, 1),
+(22, 'DOCENA', 'DOC', 12, 1),
+(24, 'CAJA', 'CJ', 1, 1),
+(26, 'METRO', 'MT', 1, 1);
 
 -- --------------------------------------------------------
 
@@ -695,7 +699,8 @@ ALTER TABLE `detalle_pedido`
   ADD PRIMARY KEY (`codigo_detalle_pedido`),
   ADD KEY `codigo_pedido` (`codigo_pedido`),
   ADD KEY `codigo_producto` (`codigo_producto`),
-  ADD KEY `codigo_servicio` (`codigo_servicio`);
+  ADD KEY `codigo_servicio` (`codigo_servicio`),
+  ADD KEY `codigo_media` (`codigo_media`);
 
 --
 -- Indices de la tabla `detalle_transferencia`
@@ -982,7 +987,8 @@ ALTER TABLE `detalle_pago`
 ALTER TABLE `detalle_pedido`
   ADD CONSTRAINT `detalle_pedido_ibfk_1` FOREIGN KEY (`codigo_pedido`) REFERENCES `pedido` (`codigo_pedido`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `detalle_pedido_ibfk_2` FOREIGN KEY (`codigo_producto`) REFERENCES `producto_insumo` (`codigo_producto`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `detalle_pedido_ibfk_3` FOREIGN KEY (`codigo_servicio`) REFERENCES `servicio` (`codigo_servicio`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `detalle_pedido_ibfk_3` FOREIGN KEY (`codigo_servicio`) REFERENCES `servicio` (`codigo_servicio`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `detalle_pedido_ibfk_4` FOREIGN KEY (`codigo_media`) REFERENCES `unidad_medida` (`codigo_media`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `detalle_transferencia`

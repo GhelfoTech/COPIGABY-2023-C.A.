@@ -155,7 +155,8 @@
                 <tr class="bg-navy-dark text-white text-[0.65rem] uppercase tracking-widest">
                   <th class="px-4 py-3">Tipo</th>
                   <th class="px-4 py-3">Descripción</th>
-                  <th class="px-4 py-3 w-24">Cantidad</th>
+                  <th class="px-4 py-3 w-20">Unidad</th>
+                  <th class="px-4 py-3 w-24">Cant.</th>
                   <th class="px-4 py-3 w-32">Precio</th>
                   <th class="px-4 py-3 w-32 text-right">Subtotal</th>
                   <th class="px-4 py-3 w-12"></th>
@@ -163,7 +164,7 @@
               </thead>
               <tbody id="itemsBody" class="divide-y font-semibold text-gray-700">
                 <tr id="emptyRow">
-                  <td colspan="6" class="px-4 py-6 text-center text-gray-400 italic">Agregue al menos un producto o servicio</td>
+                  <td colspan="7" class="px-4 py-6 text-center text-gray-400 italic">Agregue al menos un producto o servicio</td>
                 </tr>
               </tbody>
             </table>
@@ -261,15 +262,16 @@
 
           <div class="mb-6">
             <table class="w-full text-left" id="tablaDetallesItems">
-              <thead class="bg-gray-50 text-gray-400 text-[0.65rem] uppercase font-black tracking-widest">
-                <tr>
-                  <th class="px-4 py-3 text-navy-dark">Descripción</th>
-                  <th class="px-4 py-3 text-center">Tipo</th>
-                  <th class="px-4 py-3 text-center">Cant.</th>
-                  <th class="px-4 py-3 text-right">Precio</th>
-                  <th class="px-4 py-3 text-right">Subtotal</th>
-                </tr>
-              </thead>
+                 <thead class="bg-gray-50 text-gray-400 text-[0.65rem] uppercase font-black tracking-widest">
+                   <tr>
+                     <th class="px-4 py-3 text-navy-dark">Descripción</th>
+                     <th class="px-4 py-3 text-center">Tipo</th>
+                     <th class="px-4 py-3 text-center">Unidad</th>
+                     <th class="px-4 py-3 text-center">Cant.</th>
+                     <th class="px-4 py-3 text-right">Precio</th>
+                     <th class="px-4 py-3 text-right">Subtotal</th>
+                   </tr>
+                 </thead>
               <tbody class="divide-y text-sm font-bold text-navy-dark"></tbody>
             </table>
           </div>
@@ -322,6 +324,7 @@
   <script>
     const productos = <?= json_encode($productos, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
     const servicios = <?= json_encode($servicios, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    const medidas = <?= json_encode($medidas, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
     const tasaActual = <?= json_encode($tasaActual) ?>;
     const ivaDefaultCodigo = <?= json_encode((int) ($ivaActivo['codigo_IVA'] ?? 1)) ?>;
     const simboloMoneda = <?= json_encode($monedaActiva['simbolo'] ?? '$') ?>;
@@ -425,7 +428,7 @@
       document.getElementById('tasaActualInput').value = formatMoney(tasaActual);
       if (inputTasaActual) inputTasaActual.value = formatMoney(tasaActual);
       setIvaSeleccionado(ivaDefaultCodigo);
-      itemsBody.innerHTML = '<tr id="emptyRow"><td colspan="6" class="px-4 py-6 text-center text-gray-400 italic">Agregue al menos un producto o servicio</td></tr>';
+      itemsBody.innerHTML = '<tr id="emptyRow"><td colspan="7" class="px-4 py-6 text-center text-gray-400 italic">Agregue al menos un producto o servicio</td></tr>';
       subtotalGeneral.textContent = simboloMoneda + '0.00';
       montoIva.textContent = simboloMoneda + '0.00';
       totalGeneral.textContent = simboloMoneda + '0.00';
@@ -494,6 +497,10 @@
     function onTipoChange(row) {
       const tipo = row.querySelector('.item-tipo').value;
       row.querySelector('.item-select').innerHTML = buildOptions(tipo);
+      const unidadCell = row.querySelector('.item-unidad-cell');
+      if (unidadCell) {
+        unidadCell.classList.toggle('hidden', tipo !== 'producto');
+      }
       row.querySelector('.item-precio').value = '';
       row.querySelector('.item-subtotal').textContent = simboloMoneda + '0.00';
       row.dataset.subtotal = '0';
@@ -511,7 +518,7 @@
     function removeItemRow(tr) {
       tr.remove();
       if (!itemsBody.querySelector('tr[data-item]')) {
-        itemsBody.innerHTML = '<tr id="emptyRow"><td colspan="6" class="px-4 py-6 text-center text-gray-400 italic">Agregue al menos un producto o servicio</td></tr>';
+        itemsBody.innerHTML = '<tr id="emptyRow"><td colspan="7" class="px-4 py-6 text-center text-gray-400 italic">Agregue al menos un producto o servicio</td></tr>';
         subtotalGeneral.textContent = simboloMoneda + '0.00';
         montoIva.textContent = simboloMoneda + '0.00';
         totalGeneral.textContent = simboloMoneda + '0.00';
@@ -527,6 +534,16 @@
       tr.querySelector('.item-cantidad').addEventListener('input', () => updateRowSubtotal(tr));
       tr.querySelector('.item-cantidad').addEventListener('change', () => updateRowSubtotal(tr));
       tr.querySelector('.btn-remove').addEventListener('click', () => removeItemRow(tr));
+    }
+
+    function populateUnidadSelect(row) {
+      const unidadSel = row.querySelector('.item-unidad');
+      if (!unidadSel) return;
+      let html = '<option value="">— Sin unidad —</option>';
+      medidas.forEach(m => {
+        html += `<option value="${m.codigo_media}">${m.abreviatura || m.nombre} — ${m.nombre}</option>`;
+      });
+      unidadSel.innerHTML = html;
     }
 
     function addItemRow(prefill = null) {
@@ -548,6 +565,9 @@
         <td class="px-4 py-3">
           <select class="item-select w-full px-2 py-1.5 bg-gray-50 border rounded-lg text-xs font-bold focus:border-orange outline-none" required></select>
         </td>
+        <td class="px-4 py-3 item-unidad-cell hidden">
+          <select class="item-unidad w-full px-2 py-1.5 bg-gray-50 border rounded-lg text-xs font-bold focus:border-orange outline-none"></select>
+        </td>
         <td class="px-4 py-3">
           <input type="number" step="1" min="1" value="1" class="item-cantidad w-full px-2 py-1.5 bg-gray-50 border rounded-lg text-xs font-bold focus:border-orange outline-none">
         </td>
@@ -564,18 +584,23 @@
 
       itemsBody.appendChild(tr);
       bindItemRow(tr);
+      populateUnidadSelect(tr);
 
-      if (prefill) {
+     if (prefill) {
         tr.querySelector('.item-tipo').value = prefill.tipo;
         tr.querySelector('.item-select').innerHTML = buildOptions(prefill.tipo);
         const selectVal = prefill.tipo === 'producto' ? prefill.codigo_producto : prefill.codigo_servicio;
         tr.querySelector('.item-select').value = String(selectVal);
+        const unidadCell = tr.querySelector('.item-unidad-cell');
+        if (unidadCell) unidadCell.classList.toggle('hidden', prefill.tipo !== 'producto');
+        const unidadSel = tr.querySelector('.item-unidad');
+        if (unidadSel && prefill.codigo_media) unidadSel.value = String(prefill.codigo_media);
         tr.querySelector('.item-cantidad').value = String(parseInt(prefill.cantidad, 10));
         tr.querySelector('.item-precio').value = formatMoney(prefill.precio_venta);
         updateRowSubtotal(tr);
-      } else {
-        tr.querySelector('.item-select').innerHTML = buildOptions('producto');
-      }
+     } else {
+         tr.querySelector('.item-select').innerHTML = buildOptions('producto');
+     }
     }
 
     function collectItemsFromRows() {
@@ -602,6 +627,10 @@
           const stock = parseInt(option.getAttribute('data-stock') || '0', 10);
           if (cantidad > stock) {
             return { ok: false, message: 'Stock insuficiente para: ' + option.text, items: [] };
+          }
+          const unidadSelect = row.querySelector('.item-unidad');
+          if (unidadSelect) {
+            item.codigo_media = parseInt(unidadSelect.value, 10) || null;
           }
         } else {
           item.codigo_servicio = parseInt(id, 10);
@@ -724,17 +753,19 @@
 
           const tbody = document.querySelector('#tablaDetallesItems tbody');
           tbody.innerHTML = '';
-          items.forEach(it => {
-            const nombre = it.tipo === 'servicio' ? it.nombre_servicio : it.nombre_producto;
-            tbody.innerHTML += `
-              <tr>
-                <td class="px-4 py-3 uppercase">${nombre}</td>
-                <td class="px-4 py-3 text-center text-xs uppercase text-gray-500">${it.tipo}</td>
-                <td class="px-4 py-3 text-center">${parseFloat(it.cantidad)}</td>
-                <td class="px-4 py-3 text-right">${simboloMoneda}${formatMoney(parseFloat(it.precio_venta))}</td>
-                <td class="px-4 py-3 text-right font-black text-orange-dk">${simboloMoneda}${formatMoney(parseFloat(it.subtotal))}</td>
-              </tr>`;
-          });
+           items.forEach(it => {
+             const nombre = it.tipo === 'servicio' ? it.nombre_servicio : it.nombre_producto;
+             const unidadDisplay = it.tipo === 'producto' ? (it.abreviatura_medida || it.nombre_medida || '—') : '—';
+             tbody.innerHTML += `
+               <tr>
+                 <td class="px-4 py-3 uppercase">${nombre}</td>
+                 <td class="px-4 py-3 text-center text-xs uppercase text-gray-500">${it.tipo}</td>
+                 <td class="px-4 py-3 text-center font-bold text-navy-light">${unidadDisplay}</td>
+                 <td class="px-4 py-3 text-center">${parseFloat(it.cantidad)}</td>
+                 <td class="px-4 py-3 text-right">${simboloMoneda}${formatMoney(parseFloat(it.precio_venta))}</td>
+                 <td class="px-4 py-3 text-right font-black text-orange-dk">${simboloMoneda}${formatMoney(parseFloat(it.subtotal))}</td>
+               </tr>`;
+           });
 
           const activo = parseInt(h.estado, 10) === 1;
           document.getElementById('btnDetalleEditar').classList.toggle('hidden', !activo);
@@ -777,15 +808,16 @@
           if (inputTasaActual) inputTasaActual.value = formatMoney(tasaPed);
           document.getElementById('tasaActualLabel').textContent = formatMoney(tasaPed);
 
-          items.forEach(it => {
-            addItemRow({
-              tipo: it.tipo,
-              codigo_producto: it.codigo_producto,
-              codigo_servicio: it.codigo_servicio,
-              cantidad: it.cantidad,
-              precio_venta: it.precio_venta,
-            });
-          });
+           items.forEach(it => {
+             addItemRow({
+               tipo: it.tipo,
+               codigo_producto: it.codigo_producto,
+               codigo_servicio: it.codigo_servicio,
+               cantidad: it.cantidad,
+               precio_venta: it.precio_venta,
+               codigo_media: it.codigo_media,
+             });
+           });
 
           if (h.codigo_metodo) {
             selectMetodo.value = String(h.codigo_metodo);

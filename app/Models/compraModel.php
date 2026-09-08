@@ -9,6 +9,14 @@ use PDOException;
 class compraModel extends ConectDB {
     private $conex;
 
+    private $codigo_compra;
+    private $codigo_proveedor;
+    private $cedula_usuario;
+    private $numero_factura_proveedor;
+    private $fecha_compra;
+    private $monto_total;
+    private $estado;
+
     public function __construct() {
         parent::__construct();
         $this->conex = $this->getConnection();

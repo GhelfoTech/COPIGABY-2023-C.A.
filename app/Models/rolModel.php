@@ -9,6 +9,11 @@ use PDOException;
 class rolModel extends ConectDB {
     private $conex;
 
+    private $codigo_rol;
+    private $nombre_rol;
+    private $descripcion;
+    private $estado;
+
     public function __construct() {
         parent::__construct();
         $this->conex = $this->getConnection();

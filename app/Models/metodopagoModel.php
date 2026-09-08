@@ -9,6 +9,10 @@ use PDOException;
 class metodopagoModel extends ConectDB {
     private $conex;
 
+    private $codigo_metodo;
+    private $nombre_metodo;
+    private $estado;
+
     public function __construct() {
         parent::__construct();
         $this->conex = $this->getConnection();

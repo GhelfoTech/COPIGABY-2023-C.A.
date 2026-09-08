@@ -9,6 +9,13 @@ use PDOException;
 class monedaModel extends ConectDB {
     private $conex;
 
+    private $codigo_moneda;
+    private $nombre_moneda;
+    private $simbolo;
+    private $codigo_tasa;
+    private $estado;
+    private $activa;
+
     /** @var bool|null Indica si la tabla moneda tiene columna `activa` */
     private ?bool $tieneColumnaActiva = null;
 

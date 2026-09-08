@@ -9,6 +9,11 @@ use PDOException;
 class ivaModel extends ConectDB {
     private $conex;
 
+    private $codigo_iva;
+    private $porcentaje_iva;
+    private $fecha;
+    private $estado;
+
     public function __construct() {
         parent::__construct();
         $this->conex = $this->getConnection();

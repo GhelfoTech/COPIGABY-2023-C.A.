@@ -9,6 +9,13 @@ use PDOException;
 class clienteModel extends ConectDB {
     private $conex;
 
+    private $cedula_cliente;
+    private $nombre;
+    private $telefono;
+    private $correo;
+    private $direccion;
+    private $estado;
+
     public function __construct() {
         parent::__construct();
         $this->conex = $this->getConnection();
@@ -32,8 +39,8 @@ class clienteModel extends ConectDB {
      */
     public function addCliente($datos) {
         try {
-            $query = "INSERT INTO cliente (cedula_cliente, nombre, telefono, correo, direccion) 
-                      VALUES (?, ?, ?, ?, ?)";
+            $query = "INSERT INTO cliente (cedula_cliente, nombre, telefono, correo, direccion, estado) 
+                      VALUES (?, ?, ?, ?, ?, 1)";
             $stmt = $this->conex->prepare($query);
             return $stmt->execute([
                 $datos['cedula_cliente'],
@@ -52,7 +59,7 @@ class clienteModel extends ConectDB {
      */
     public function updateCliente($idActual, $datos) {
         try {
-            $query = "UPDATE cliente SET cedula_cliente = ?, nombre = ?, telefono = ?, correo = ?, direccion = ? 
+            $query = "UPDATE cliente SET cedula_cliente = ?, nombre = ?, telefono = ?, correo = ?, direccion = ?, estado = ? 
                       WHERE cedula_cliente = ?";
             $stmt = $this->conex->prepare($query);
             return $stmt->execute([
@@ -61,6 +68,7 @@ class clienteModel extends ConectDB {
                 $datos['telefono'],
                 $datos['correo'],
                 $datos['direccion'],
+                (int) $datos['estado'],
                 $idActual
             ]);
         } catch (PDOException $e) {
@@ -69,11 +77,11 @@ class clienteModel extends ConectDB {
     }
 
     /**
-     * Elimina un cliente de la base de datos.
+     * Desactivación lógica (borrado) de un cliente.
      */
     public function deleteCliente($id) {
         try {
-            $stmt = $this->conex->prepare("DELETE FROM cliente WHERE cedula_cliente = ?");
+            $stmt = $this->conex->prepare("UPDATE cliente SET estado = 0 WHERE cedula_cliente = ?");
             return ["status" => $stmt->execute([$id]) ? "success" : "error"];
         } catch (PDOException $e) {
             return ["status" => "error", "message" => $e->getMessage()];

@@ -9,6 +9,12 @@ use PDOException;
 class servicioModel extends ConectDB {
     private $conex;
 
+    private $codigo_servicio;
+    private $nombre_servicio;
+    private $descripcion;
+    private $precio;
+    private $estado;
+
     public function __construct() {
         parent::__construct();
         $this->conex = $this->getConnection();
