@@ -101,7 +101,7 @@
   <div id="modalPedido" class="fixed inset-0 z-[150] hidden overflow-y-auto">
     <div class="flex items-center justify-center min-h-screen p-4">
       <div class="fixed inset-0 bg-navy-dark/60 backdrop-blur-sm" id="overlayPedido"></div>
-      <div class="relative bg-white shadow-xl rounded-custom w-full max-w-4xl animate-fade-up overflow-hidden">
+      <div class="relative bg-white shadow-xl rounded-custom w-full max-w-7xl animate-fade-up overflow-hidden">
         <div class="px-6 py-4 border-b flex justify-between items-center bg-gray-50/50">
           <h3 id="modalPedidoTitulo" class="text-xl font-black text-navy-dark tracking-tight">Nuevo Pedido</h3>
           <button type="button" class="text-gray-400 hover:text-navy-dark closeModalPedido">
@@ -118,7 +118,7 @@
           <input type="hidden" name="monto_total" id="inputMontoTotal" value="0.00">
           <input type="hidden" name="tasa_actual" id="inputTasaActual" value="<?= number_format($tasaActual, 2, '.', '') ?>">
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
              <div>
                <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Cliente <span class="text-red-500">*</span></label>
                <select name="codigo_cliente" id="selectCliente" required class="w-full px-4 py-2 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-orange/20 focus:border-orange outline-none font-bold">
@@ -149,24 +149,26 @@
             </button>
           </div>
 
-          <div class="overflow-x-auto border rounded-lg mb-4">
-            <table class="w-full text-left text-sm">
-              <thead>
-                <tr class="bg-navy-dark text-white text-[0.65rem] uppercase tracking-widest">
-                  <th class="px-4 py-3">Tipo</th>
-                  <th class="px-4 py-3">Descripción</th>
-                  <th class="px-4 py-3 w-20">Unidad</th>
-                  <th class="px-4 py-3 w-24">Cant.</th>
-                  <th class="px-4 py-3 w-32">Precio</th>
-                  <th class="px-4 py-3 w-32 text-right">Subtotal</th>
-                  <th class="px-4 py-3 w-12"></th>
-                </tr>
-              </thead>
-              <tbody id="itemsBody" class="divide-y font-semibold text-gray-700">
-                <tr id="emptyRow">
-                  <td colspan="7" class="px-4 py-6 text-center text-gray-400 italic">Agregue al menos un producto o servicio</td>
-                </tr>
-              </tbody>
+           <div class="overflow-x-auto border rounded-lg mb-4">
+             <table class="w-full text-left text-sm">
+                 <thead>
+                  <tr class="bg-navy-dark text-white text-xs uppercase tracking-widest">
+                    <th class="px-2 py-2 w-20">Tipo</th>
+                    <th class="px-2 py-2 w-80">Descripción</th>
+                     <th class="px-2 py-2 w-20">Unidad</th>
+                     <th class="px-2 py-2 w-16">Cant</th>
+                     <th class="px-2 py-2 w-20">Cant. Unid</th>
+                     <th class="px-2 py-2 w-20">Cant. Total</th>
+                    <th class="px-2 py-2 w-20">Precio</th>
+                    <th class="px-2 py-2 w-24 text-right">Subtotal</th>
+                    <th class="px-2 py-2 w-10"></th>
+                  </tr>
+                </thead>
+               <tbody id="itemsBody" class="divide-y font-semibold text-gray-700">
+                 <tr id="emptyRow">
+                   <td colspan="9" class="px-4 py-6 text-center text-gray-400 italic">Agregue al menos un producto o servicio</td>
+                 </tr>
+               </tbody>
             </table>
           </div>
 
@@ -428,7 +430,7 @@
       document.getElementById('tasaActualInput').value = formatMoney(tasaActual);
       if (inputTasaActual) inputTasaActual.value = formatMoney(tasaActual);
       setIvaSeleccionado(ivaDefaultCodigo);
-      itemsBody.innerHTML = '<tr id="emptyRow"><td colspan="7" class="px-4 py-6 text-center text-gray-400 italic">Agregue al menos un producto o servicio</td></tr>';
+      itemsBody.innerHTML = '<tr id="emptyRow"><td colspan="9" class="px-4 py-6 text-center text-gray-400 italic">Agregue al menos un producto o servicio</td></tr>';
       subtotalGeneral.textContent = simboloMoneda + '0.00';
       montoIva.textContent = simboloMoneda + '0.00';
       totalGeneral.textContent = simboloMoneda + '0.00';
@@ -461,8 +463,13 @@
         const nombre = tipo === 'producto' ? item.nombre_producto : item.nombre_servicio;
         const precio = tipo === 'producto' ? item.precio : item.precio;
         const stock = tipo === 'producto' ? item.stock_actual : '';
+        const cantidadUnidad = tipo === 'producto' ? (parseInt(item.cantidad_unidad || '1', 10) || 1) : 1;
+        const codigoMedia = tipo === 'producto' ? (item.codigo_media || '') : '';
+        const abreviatura = tipo === 'producto' ? (item.abreviatura_medida || '') : '';
+        const nombreMedida = tipo === 'producto' ? (item.nombre_medida || '') : '';
         const extra = stock !== '' ? ` data-stock="${stock}"` : '';
-        html += `<option value="${id}" data-precio="${parseFloat(precio)}"${extra}>${nombre}</option>`;
+        const extraUnidad = tipo === 'producto' ? ` data-cantidad-unidad="${cantidadUnidad}" data-codigo-media="${codigoMedia}" data-abreviatura="${abreviatura}" data-nombre-medida="${nombreMedida}"` : '';
+        html += `<option value="${id}" data-precio="${parseFloat(precio)}"${extra}${extraUnidad}>${nombre}</option>`;
       });
       return html;
     }
@@ -485,12 +492,29 @@
       return value;
     }
 
+    function getCantidadTotal(row) {
+      const tipo = row.querySelector('.item-tipo').value;
+      const cant = normalizeCantidad(row.querySelector('.item-cant'));
+      const cantUnidad = normalizeCantidad(row.querySelector('.item-cant-unidad'));
+      if (tipo === 'producto') {
+        const selectItem = row.querySelector('.item-select');
+        const option = selectItem ? selectItem.options[selectItem.selectedIndex] : null;
+        const codigoMedia = option ? (option.getAttribute('data-codigo-media') || '') : '';
+        if (!codigoMedia) {
+          return cant;
+        }
+      }
+      return cant * cantUnidad;
+    }
+
     function updateRowSubtotal(row) {
-      const cantidad = normalizeCantidad(row.querySelector('.item-cantidad'));
+      const cantidadTotal = getCantidadTotal(row);
       const precio = parseFloat(row.querySelector('.item-precio').value) || 0;
-      const subtotal = roundMoney(cantidad * precio);
+      const subtotal = roundMoney(cantidadTotal * precio);
       row.querySelector('.item-subtotal').textContent = simboloMoneda + formatMoney(subtotal);
       row.dataset.subtotal = String(subtotal);
+      const cantidadTotalInput = row.querySelector('.item-cantidad-total');
+      if (cantidadTotalInput) cantidadTotalInput.value = String(cantidadTotal);
       recalcTotal();
     }
 
@@ -502,23 +526,72 @@
         unidadCell.classList.toggle('hidden', tipo !== 'producto');
       }
       row.querySelector('.item-precio').value = '';
+      row.querySelector('.item-cant').value = '1';
+      row.querySelector('.item-cant-unidad').value = '1';
+      row.querySelector('.item-cantidad-total').value = '1';
       row.querySelector('.item-subtotal').textContent = simboloMoneda + '0.00';
+      row.querySelector('.item-unidad-info').textContent = '';
+      row.querySelector('.item-stock-info').textContent = '';
       row.dataset.subtotal = '0';
       recalcTotal();
     }
 
     function onItemSelect(row) {
       const selectItem = row.querySelector('.item-select');
-      const option = selectItem.options[selectItem.selectedIndex];
+      const option = selectItem ? selectItem.options[selectItem.selectedIndex] : null;
       const precio = option ? option.getAttribute('data-precio') : '';
-      row.querySelector('.item-precio').value = precio !== null && precio !== '' ? precio : '';
+      const precioInput = row.querySelector('.item-precio');
+      if (precioInput) precioInput.value = precio !== null && precio !== '' ? precio : '';
+
+      const unidadSel = row.querySelector('.item-unidad');
+      const unidadesUnidadInput = row.querySelector('.item-cant-unidad');
+      const unidadInfo = row.querySelector('.item-unidad-info');
+      const cantidadInput = row.querySelector('.item-cant');
+
+      if (unidadSel && option) {
+        const codigoMedia = option.getAttribute('data-codigo-media');
+        const cantidadUnidad = parseInt(option.getAttribute('data-cantidad-unidad') || '1', 10) || 1;
+        
+        if (codigoMedia) {
+          unidadSel.value = codigoMedia;
+        } else {
+          unidadSel.value = '';
+        }
+        
+        if (unidadesUnidadInput) {
+          unidadesUnidadInput.value = String(cantidadUnidad);
+        }
+        
+        if (unidadInfo) {
+          const abreviatura = option.getAttribute('data-abreviatura') || '';
+          const nombreMedida = option.getAttribute('data-nombre-medida') || '';
+          const texto = abreviatura ? `${abreviatura} / ${nombreMedida}` : (nombreMedida || '');
+          unidadInfo.textContent = codigoMedia ? (texto ? `Unidad: ${texto} (${cantidadUnidad} und)` : '') : '';
+        }
+
+        if (cantidadInput) {
+          const cantidad = parseInt(cantidadInput.value, 10);
+          if (!isNaN(cantidad) && cantidad >= 1) {
+            const cantidadTotal = codigoMedia ? (cantidad * cantidadUnidad) : cantidad;
+            const cantidadTotalInput = row.querySelector('.item-cantidad-total');
+            if (cantidadTotalInput) cantidadTotalInput.value = String(cantidadTotal);
+          }
+        }
+
+        const stockInfo = row.querySelector('.item-stock-info');
+        if (stockInfo) {
+          const stock = option.getAttribute('data-stock');
+          stockInfo.textContent = stock !== null ? `Stock disponible: ${stock} und` : '';
+        }
+      }
+
       updateRowSubtotal(row);
     }
 
     function removeItemRow(tr) {
       tr.remove();
       if (!itemsBody.querySelector('tr[data-item]')) {
-        itemsBody.innerHTML = '<tr id="emptyRow"><td colspan="7" class="px-4 py-6 text-center text-gray-400 italic">Agregue al menos un producto o servicio</td></tr>';
+        itemsBody.innerHTML = '<tr id="emptyRow"><td colspan="9" class="px-4 py-6 text-center text-gray-400 italic">Agregue al menos un producto o servicio</td></tr>';
         subtotalGeneral.textContent = simboloMoneda + '0.00';
         montoIva.textContent = simboloMoneda + '0.00';
         totalGeneral.textContent = simboloMoneda + '0.00';
@@ -531,8 +604,20 @@
     function bindItemRow(tr) {
       tr.querySelector('.item-tipo').addEventListener('change', () => onTipoChange(tr));
       tr.querySelector('.item-select').addEventListener('change', () => onItemSelect(tr));
-      tr.querySelector('.item-cantidad').addEventListener('input', () => updateRowSubtotal(tr));
-      tr.querySelector('.item-cantidad').addEventListener('change', () => updateRowSubtotal(tr));
+      tr.querySelector('.item-cant').addEventListener('input', () => updateRowSubtotal(tr));
+      tr.querySelector('.item-cant').addEventListener('change', () => updateRowSubtotal(tr));
+      tr.querySelector('.item-cant-unidad').addEventListener('input', () => updateRowSubtotal(tr));
+      tr.querySelector('.item-cant-unidad').addEventListener('change', () => updateRowSubtotal(tr));
+      tr.querySelector('.item-unidad').addEventListener('change', () => {
+        const unidadSel = tr.querySelector('.item-unidad');
+        const unidadesUnidadInput = tr.querySelector('.item-cant-unidad');
+        if (unidadSel && unidadesUnidadInput) {
+          const selectedOption = unidadSel.options[unidadSel.selectedIndex];
+          const cantidadUnidad = selectedOption ? (parseInt(selectedOption.getAttribute('data-cantidad-unidad') || '1', 10) || 1) : 1;
+          unidadesUnidadInput.value = String(cantidadUnidad);
+        }
+        updateRowSubtotal(tr);
+      });
       tr.querySelector('.btn-remove').addEventListener('click', () => removeItemRow(tr));
     }
 
@@ -541,12 +626,13 @@
       if (!unidadSel) return;
       let html = '<option value="">— Sin unidad —</option>';
       medidas.forEach(m => {
-        html += `<option value="${m.codigo_media}">${m.abreviatura || m.nombre} — ${m.nombre}</option>`;
+        html += `<option value="${m.codigo_media}" data-cantidad-unidad="${m.cantidad_unidad || 1}">${m.abreviatura || m.nombre} — ${m.nombre}</option>`;
       });
       unidadSel.innerHTML = html;
     }
 
     function addItemRow(prefill = null) {
+      console.log('addItemRow called', prefill);
       const emptyRow = document.getElementById('emptyRow');
       if (emptyRow) emptyRow.remove();
 
@@ -556,26 +642,36 @@
       tr.dataset.item = '1';
       tr.dataset.subtotal = '0';
       tr.innerHTML = `
-        <td class="px-4 py-3">
+        <td class="px-2 py-2">
           <select class="item-tipo w-full px-2 py-1.5 bg-gray-50 border rounded-lg text-xs font-bold focus:border-orange outline-none">
             <option value="producto">Producto</option>
             <option value="servicio">Servicio</option>
           </select>
         </td>
-        <td class="px-4 py-3">
-          <select class="item-select w-full px-2 py-1.5 bg-gray-50 border rounded-lg text-xs font-bold focus:border-orange outline-none" required></select>
+         <td class="px-2 py-2">
+           <select class="item-select w-full px-2 py-1.5 bg-gray-50 border rounded-lg text-xs font-bold focus:border-orange outline-none" required></select>
+           <div class="item-unidad-info text-[0.65rem] text-gray-500 font-semibold mt-1"></div>
+           <div class="item-stock-info text-[0.65rem] text-orange font-semibold mt-0.5"></div>
+         </td>
+        <td class="px-2 py-2 item-unidad-cell">
+          <select class="item-unidad w-full px-2 py-1.5 bg-gray-50 border rounded-lg text-xs font-bold focus:border-orange outline-none">
+            <option value="">— Seleccionar unidad —</option>
+          </select>
         </td>
-        <td class="px-4 py-3 item-unidad-cell hidden">
-          <select class="item-unidad w-full px-2 py-1.5 bg-gray-50 border rounded-lg text-xs font-bold focus:border-orange outline-none"></select>
+        <td class="px-2 py-2">
+          <input type="number" step="1" min="1" value="1" class="item-cant w-full px-2 py-1.5 bg-white border rounded-lg text-xs font-bold focus:border-orange outline-none">
         </td>
-        <td class="px-4 py-3">
-          <input type="number" step="1" min="1" value="1" class="item-cantidad w-full px-2 py-1.5 bg-gray-50 border rounded-lg text-xs font-bold focus:border-orange outline-none">
-        </td>
-        <td class="px-4 py-3">
+         <td class="px-2 py-2">
+           <input type="number" step="1" min="1" value="1" class="item-cant-unidad w-full px-2 py-1.5 bg-slate-800 text-slate-400 cursor-not-allowed border rounded-lg text-xs font-bold outline-none" readonly tabindex="-1">
+         </td>
+         <td class="px-2 py-2">
+           <input type="number" step="1" min="1" value="1" readonly tabindex="-1" class="item-cantidad-total w-full px-2 py-1.5 bg-slate-800 text-slate-400 cursor-not-allowed border rounded-lg text-xs font-bold outline-none">
+         </td>
+        <td class="px-2 py-2">
           <input type="number" step="0.01" min="0" readonly tabindex="-1" class="item-precio w-full px-2 py-1.5 bg-slate-800 text-slate-400 cursor-not-allowed border rounded-lg text-xs font-bold outline-none">
         </td>
-        <td class="px-4 py-3 text-right font-black text-navy-dark item-subtotal">${simboloMoneda}0.00</td>
-        <td class="px-4 py-3 text-center">
+        <td class="px-2 py-2 text-right font-black text-navy-dark item-subtotal">${simboloMoneda}0.00</td>
+        <td class="px-2 py-2 text-center">
           <button type="button" class="btn-remove text-red-400 hover:text-red-600 p-1" title="Quitar">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
@@ -586,16 +682,27 @@
       bindItemRow(tr);
       populateUnidadSelect(tr);
 
-     if (prefill) {
+      if (prefill) {
         tr.querySelector('.item-tipo').value = prefill.tipo;
         tr.querySelector('.item-select').innerHTML = buildOptions(prefill.tipo);
-        const selectVal = prefill.tipo === 'producto' ? prefill.codigo_producto : prefill.codigo_servicio;
-        tr.querySelector('.item-select').value = String(selectVal);
-        const unidadCell = tr.querySelector('.item-unidad-cell');
-        if (unidadCell) unidadCell.classList.toggle('hidden', prefill.tipo !== 'producto');
-        const unidadSel = tr.querySelector('.item-unidad');
-        if (unidadSel && prefill.codigo_media) unidadSel.value = String(prefill.codigo_media);
-        tr.querySelector('.item-cantidad').value = String(parseInt(prefill.cantidad, 10));
+         const selectVal = prefill.tipo === 'producto' ? prefill.codigo_producto : prefill.codigo_servicio;
+         tr.querySelector('.item-select').value = String(selectVal);
+         const unidadCell = tr.querySelector('.item-unidad-cell');
+         if (unidadCell) unidadCell.classList.toggle('hidden', prefill.tipo !== 'producto');
+         const unidadSel = tr.querySelector('.item-unidad');
+         if (unidadSel && prefill.codigo_unidad_medida) unidadSel.value = String(prefill.codigo_unidad_medida);
+
+         const selectOption = tr.querySelector('.item-select').options[tr.querySelector('.item-select').selectedIndex];
+         const cantidadUnidadPrefill = selectOption ? (parseInt(selectOption.getAttribute('data-cantidad-unidad') || '1', 10) || 1) : 1;
+         const inputUnidades = tr.querySelector('.item-cant-unidad');
+         if (inputUnidades) inputUnidades.value = String(cantidadUnidadPrefill);
+
+         const cantidadTotalPrefill = parseInt(prefill.cantidad, 10) || 1;
+         const unidadesPrefill = Math.max(1, Math.round(cantidadTotalPrefill / cantidadUnidadPrefill));
+          tr.querySelector('.item-cant').value = String(unidadesPrefill);
+          if (inputUnidades) inputUnidades.value = String(cantidadUnidadPrefill);
+          tr.querySelector('.item-cantidad-total').value = String(cantidadTotalPrefill);
+
         tr.querySelector('.item-precio').value = formatMoney(prefill.precio_venta);
         updateRowSubtotal(tr);
      } else {
@@ -614,23 +721,24 @@
         const tipo = row.querySelector('.item-tipo').value;
         const selectItem = row.querySelector('.item-select');
         const id = selectItem.value;
-        const cantidad = normalizeCantidad(row.querySelector('.item-cantidad'));
+        const cantidadTotal = getCantidadTotal(row);
         const precio = parseFloat(row.querySelector('.item-precio').value);
 
         if (!id) return { ok: false, message: 'Seleccione producto o servicio en cada línea.', items: [] };
         if (isNaN(precio) || precio < 0) return { ok: false, message: 'Precio no válido en una de las líneas.', items: [] };
 
-        const item = { tipo, cantidad, precio_venta: roundMoney(precio) };
+        const item = { tipo, cantidad: cantidadTotal, precio_venta: roundMoney(precio) };
         if (tipo === 'producto') {
           item.codigo_producto = parseInt(id, 10);
           const option = selectItem.options[selectItem.selectedIndex];
-          const stock = parseInt(option.getAttribute('data-stock') || '0', 10);
-          if (cantidad > stock) {
+          const stockAttr = option.getAttribute('data-stock');
+          const stock = stockAttr !== null ? parseInt(stockAttr, 10) : null;
+          if (stock !== null && cantidadTotal > stock) {
             return { ok: false, message: 'Stock insuficiente para: ' + option.text, items: [] };
           }
           const unidadSelect = row.querySelector('.item-unidad');
           if (unidadSelect) {
-            item.codigo_media = parseInt(unidadSelect.value, 10) || null;
+            item.codigo_unidad_medida = parseInt(unidadSelect.value, 10) || null;
           }
         } else {
           item.codigo_servicio = parseInt(id, 10);
@@ -883,7 +991,7 @@
       selectIva.addEventListener('change', recalcTotal);
     }
 
-    document.getElementById('btnAddItem').onclick = () => addItemRow();
+    document.getElementById('btnAddItem').addEventListener('click', () => addItemRow());
     formPedido.addEventListener('submit', submitPedido);
   </script>
 </body>

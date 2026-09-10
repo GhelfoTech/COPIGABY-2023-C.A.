@@ -12,6 +12,7 @@ class productoModel extends ConectDB {
     private $codigo_producto;
     private $nombre_producto;
     private $codigo_categoria;
+    private $codigo_media;
     private $descripcion;
     private $costo;
     private $porcentaje_ganancia;
@@ -67,18 +68,37 @@ class productoModel extends ConectDB {
 
     public function addProduct($datos) {
         try {
-            $query = "INSERT INTO producto_insumo (nombre_producto, codigo_categoria, descripcion, porcentaje_ganancia, stock_actual, stock_minimo, estado)
-                VALUES (?, ?, ?, ?, ?, ?, 1)";
+            $checkMedia = $this->conex->prepare("SHOW COLUMNS FROM producto_insumo LIKE 'codigo_media'");
+            $checkMedia->execute();
+            $hasMedia = $checkMedia->rowCount() > 0;
 
-            $stmt = $this->conex->prepare($query);
-            $stmt->execute([
-                $datos['nombre_producto'],
-                $datos['codigo_categoria'],
-                $datos['descripcion'],
-                floatval($datos['porcentaje_ganancia'] ?? 0),
-                intval($datos['stock_actual'] ?? 0),
-                intval($datos['stock_minimo'] ?? 0)
-            ]);
+            if ($hasMedia && !empty($datos['codigo_media'])) {
+                $query = "INSERT INTO producto_insumo (nombre_producto, codigo_categoria, codigo_media, descripcion, porcentaje_ganancia, stock_actual, stock_minimo, estado)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 1)";
+                $stmt = $this->conex->prepare($query);
+                $stmt->execute([
+                    $datos['nombre_producto'],
+                    $datos['codigo_categoria'],
+                    (int) $datos['codigo_media'],
+                    $datos['descripcion'],
+                    floatval($datos['porcentaje_ganancia'] ?? 0),
+                    intval($datos['stock_actual'] ?? 0),
+                    intval($datos['stock_minimo'] ?? 0)
+                ]);
+            } else {
+                $query = "INSERT INTO producto_insumo (nombre_producto, codigo_categoria, descripcion, porcentaje_ganancia, stock_actual, stock_minimo, estado)
+                    VALUES (?, ?, ?, ?, ?, ?, 1)";
+                $stmt = $this->conex->prepare($query);
+                $stmt->execute([
+                    $datos['nombre_producto'],
+                    $datos['codigo_categoria'],
+                    $datos['descripcion'],
+                    floatval($datos['porcentaje_ganancia'] ?? 0),
+                    intval($datos['stock_actual'] ?? 0),
+                    intval($datos['stock_minimo'] ?? 0)
+                ]);
+            }
+
             $this->calcularYGuardarPrecio((int) $this->conex->lastInsertId());
             return ["status" => "success"];
         } catch (PDOException $e) {
@@ -88,19 +108,40 @@ class productoModel extends ConectDB {
 
     public function updateProduct($id, $datos) {
         try {
-            $query = "UPDATE producto_insumo SET nombre_producto = ?, codigo_categoria = ?, descripcion = ?, porcentaje_ganancia = ?, stock_actual = ?, stock_minimo = ?, estado = ? WHERE codigo_producto = ?";
+            $checkMedia = $this->conex->prepare("SHOW COLUMNS FROM producto_insumo LIKE 'codigo_media'");
+            $checkMedia->execute();
+            $hasMedia = $checkMedia->rowCount() > 0;
 
-            $stmt = $this->conex->prepare($query);
-            $stmt->execute([
-                $datos['nombre_producto'],
-                $datos['codigo_categoria'],
-                $datos['descripcion'],
-                floatval($datos['porcentaje_ganancia'] ?? 0),
-                intval($datos['stock_actual'] ?? 0),
-                intval($datos['stock_minimo'] ?? 0),
-                intval($datos['estado'] ?? 1),
-                $id
-            ]);
+            if ($hasMedia) {
+                $codigoMedia = !empty($datos['codigo_media']) ? (int) $datos['codigo_media'] : null;
+                $query = "UPDATE producto_insumo SET nombre_producto = ?, codigo_categoria = ?, codigo_media = ?, descripcion = ?, porcentaje_ganancia = ?, stock_actual = ?, stock_minimo = ?, estado = ? WHERE codigo_producto = ?";
+                $stmt = $this->conex->prepare($query);
+                $stmt->execute([
+                    $datos['nombre_producto'],
+                    $datos['codigo_categoria'],
+                    $codigoMedia,
+                    $datos['descripcion'],
+                    floatval($datos['porcentaje_ganancia'] ?? 0),
+                    intval($datos['stock_actual'] ?? 0),
+                    intval($datos['stock_minimo'] ?? 0),
+                    intval($datos['estado'] ?? 1),
+                    $id
+                ]);
+            } else {
+                $query = "UPDATE producto_insumo SET nombre_producto = ?, codigo_categoria = ?, descripcion = ?, porcentaje_ganancia = ?, stock_actual = ?, stock_minimo = ?, estado = ? WHERE codigo_producto = ?";
+                $stmt = $this->conex->prepare($query);
+                $stmt->execute([
+                    $datos['nombre_producto'],
+                    $datos['codigo_categoria'],
+                    $datos['descripcion'],
+                    floatval($datos['porcentaje_ganancia'] ?? 0),
+                    intval($datos['stock_actual'] ?? 0),
+                    intval($datos['stock_minimo'] ?? 0),
+                    intval($datos['estado'] ?? 1),
+                    $id
+                ]);
+            }
+
             $this->calcularYGuardarPrecio($id);
             return ["status" => "success"];
         } catch (PDOException $e) {

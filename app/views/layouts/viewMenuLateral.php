@@ -92,7 +92,7 @@ function navIconClass(bool $active): string {
         </svg>
       </button>
       <div class="dropdown-menu flex flex-col bg-slate-950/50">
-        <a href="?url=producto" class="<?= navSubClass('producto', $currentUrl) ?>">Productos</a>
+        <a href="?url=producto" class="<?= navSubClass('producto', $currentUrl) ?>">Productos-Insumo</a>
         <a href="?url=categoria" class="<?= navSubClass('categoria', $currentUrl) ?>">Categoría</a>
       </div>
     </div>

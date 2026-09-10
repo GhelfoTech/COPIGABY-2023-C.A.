@@ -11,16 +11,25 @@
 
     $object = new medidaModel();
 
+    $flash = null;
+
     if (isset($_GET['type'])) {
 
         if ($_GET['type'] === 'register') {
             if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nombre'])) {
                 $abreviatura = trim($_POST['abreviatura'] ?? '');
                 $cantidadUnidad = isset($_POST['cantidad_unidad']) ? max(1, (int) $_POST['cantidad_unidad']) : 1;
-                $object->addMedida($_POST['nombre'], $abreviatura ?: null, $cantidadUnidad);
-                header("Location: ?url=medida");
-                exit();
+                $result = $object->addMedida($_POST['nombre'], $abreviatura ?: null, $cantidadUnidad);
+                if ($result === true) {
+                    $flash = ['status' => 'success', 'message' => 'Unidad registrada correctamente'];
+                } elseif (is_array($result)) {
+                    $flash = ['status' => 'error', 'message' => $result['message'] ?? 'No se pudo registrar la unidad'];
+                } else {
+                    $flash = ['status' => 'error', 'message' => 'No se pudo registrar la unidad'];
+                }
+                $_SESSION['medida_flash'] = $flash;
             }
+            session_write_close();
             header("Location: ?url=medida");
             exit();
         }
@@ -30,10 +39,11 @@
                 $estado = isset($_POST['estado']) ? 1 : 0;
                 $abreviatura = trim($_POST['abreviatura'] ?? '');
                 $cantidadUnidad = isset($_POST['cantidad_unidad']) ? max(1, (int) $_POST['cantidad_unidad']) : 1;
-                $object->updateMedida((int) $_POST['codigo_media'], $_POST['nombre'], $abreviatura ?: null, $cantidadUnidad, $estado);
-                header("Location: ?url=medida");
-                exit();
+                $result = $object->updateMedida((int) $_POST['codigo_media'], $_POST['nombre'], $abreviatura ?: null, $cantidadUnidad, $estado);
+                $flash = $result === true ? ['status' => 'success', 'message' => 'Unidad actualizada correctamente'] : ['status' => 'error', 'message' => 'No se pudo actualizar la unidad'];
+                $_SESSION['medida_flash'] = $flash;
             }
+            session_write_close();
             header("Location: ?url=medida");
             exit();
         }
@@ -45,11 +55,13 @@
                 echo json_encode($result);
                 exit();
             }
+            session_write_close();
             header("Location: ?url=medida");
             exit();
         }
 
         else {
+            session_write_close();
             header("Location: ?url=medida");
             exit();
         }

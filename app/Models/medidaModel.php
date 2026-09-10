@@ -38,46 +38,31 @@ class medidaModel extends ConectDB {
      * Incluye cantidad_unidad (unidades por caja) para cálculos de stock.
      */
      public function getMedidasActivas() {
-        try {
-            $query = "SELECT codigo_media, nombre, cantidad_unidad FROM unidad_medida WHERE estado = 1 ORDER BY nombre ASC";
-            $checkStmt = $this->conex->prepare("SHOW COLUMNS FROM unidad_medida LIKE 'abreviatura'");
-            $checkStmt->execute();
-            if ($checkStmt->rowCount() > 0) {
-                $query = "SELECT codigo_media, nombre, abreviatura, cantidad_unidad FROM unidad_medida WHERE estado = 1 ORDER BY nombre ASC";
-            }
-            $stmt = $this->conex->prepare($query);
-            $stmt->execute();
-            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            foreach ($rows as &$row) {
-                if (!isset($row['abreviatura'])) $row['abreviatura'] = null;
-                $row['cantidad_unidad'] = (int) ($row['cantidad_unidad'] ?? 1);
-            }
-            return $rows;
-        } catch (PDOException $e) {
-            return [];
-        }
-    }
+         try {
+             $query = "SELECT codigo_media, nombre, abreviatura, cantidad_unidad FROM unidad_medida WHERE estado = 1 ORDER BY nombre ASC";
+             $stmt = $this->conex->prepare($query);
+             $stmt->execute();
+             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+             foreach ($rows as &$row) {
+                 if (!isset($row['abreviatura'])) $row['abreviatura'] = null;
+                 $row['cantidad_unidad'] = (int) ($row['cantidad_unidad'] ?? 1);
+             }
+             return $rows;
+         } catch (PDOException $e) {
+             return [];
+         }
+     }
 
     /**
      * Obtiene todas las unidades con abreviatura y cantidad_unidad.
      */
-     public function getAllMedidasFull() {
+    public function getAllMedidasFull() {
         try {
-            $query = "SELECT codigo_media, nombre, estado FROM unidad_medida ORDER BY codigo_media DESC";
-            $checkStmt = $this->conex->prepare("SHOW COLUMNS FROM unidad_medida LIKE 'abreviatura'");
-            $checkStmt->execute();
-            $hasAbreviatura = $checkStmt->rowCount() > 0;
-            $checkStmt2 = $this->conex->prepare("SHOW COLUMNS FROM unidad_medida LIKE 'cantidad_unidad'");
-            $checkStmt2->execute();
-            $hasCantidadUnidad = $checkStmt2->rowCount() > 0;
-
-            $cols = ['codigo_media', 'nombre'];
-            if ($hasAbreviatura) $cols[] = 'abreviatura';
-            if ($hasCantidadUnidad) $cols[] = 'cantidad_unidad';
-            $cols[] = 'estado';
-            $query = "SELECT " . implode(', ', $cols) . " FROM unidad_medida ORDER BY codigo_media DESC";
-
+            $query = "SELECT codigo_media, nombre, abreviatura, cantidad_unidad, estado FROM unidad_medida ORDER BY codigo_media DESC";
             $stmt = $this->conex->prepare($query);
+            if (!$stmt) {
+                $stmt = $this->conex->query($query);
+            }
             $stmt->execute();
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
             foreach ($rows as &$row) {
@@ -93,55 +78,55 @@ class medidaModel extends ConectDB {
 
     public function addMedida($nombre, $abreviatura = null, $cantidadUnidad = 1) {
         try {
-            $cols = ['nombre'];
-            $placeholders = ['?'];
-            $params = [$nombre];
-            $checkAbrev = $this->conex->prepare("SHOW COLUMNS FROM unidad_medida LIKE 'abreviatura'");
-            $checkAbrev->execute();
-            if ($checkAbrev->rowCount() > 0) {
-                $cols[] = 'abreviatura';
-                $placeholders[] = '?';
-                $params[] = $abreviatura;
+            $nombre = trim((string) $nombre);
+            $abreviatura = $abreviatura !== null ? trim((string) $abreviatura) : null;
+            $cantidadUnidad = (int) $cantidadUnidad;
+
+            if ($nombre === '') {
+                return ['status' => 'error', 'message' => 'El nombre es obligatorio'];
             }
-            $checkCant = $this->conex->prepare("SHOW COLUMNS FROM unidad_medida LIKE 'cantidad_unidad'");
-            $checkCant->execute();
-            if ($checkCant->rowCount() > 0) {
-                $cols[] = 'cantidad_unidad';
-                $placeholders[] = '?';
-                $params[] = (int) $cantidadUnidad;
-            }
-            $cols[] = 'estado';
-            $placeholders[] = '1';
-            $query = "INSERT INTO unidad_medida (" . implode(', ', $cols) . ") VALUES (" . implode(', ', $placeholders) . ")";
+
+            $query = 'INSERT INTO unidad_medida (nombre, abreviatura, cantidad_unidad, estado) VALUES (?, ?, ?, 1)';
             $stmt = $this->conex->prepare($query);
-            return $stmt->execute($params);
+            $ok = $stmt->execute([$nombre, $abreviatura, $cantidadUnidad]);
+            if ($ok) {
+                return true;
+            }
+            return ['status' => 'error', 'message' => 'No se pudo registrar la unidad'];
         } catch (PDOException $e) {
-            return false;
+            $mensaje = $e->getMessage();
+            if (stripos($mensaje, 'default value') !== false || stripos($mensaje, 'codigo_media') !== false) {
+                try {
+                    $stmtMax = $this->conex->query('SELECT MAX(codigo_media) AS maximo FROM unidad_medida');
+                    $maximo = (int) $stmtMax->fetchColumn();
+                    $nuevoCodigo = $maximo + 1;
+
+                    $query2 = 'INSERT INTO unidad_medida (codigo_media, nombre, abreviatura, cantidad_unidad, estado) VALUES (?, ?, ?, ?, 1)';
+                    $stmt2 = $this->conex->prepare($query2);
+                    $ok2 = $stmt2->execute([$nuevoCodigo, $nombre, $abreviatura, $cantidadUnidad]);
+                    if ($ok2) {
+                        return true;
+                    }
+                    return ['status' => 'error', 'message' => 'No se pudo registrar la unidad con código manual'];
+                } catch (PDOException $e2) {
+                    return ['status' => 'error', 'message' => $e2->getMessage()];
+                }
+            }
+            return ['status' => 'error', 'message' => $mensaje];
         }
     }
 
     public function updateMedida($id, $nombre, $abreviatura = null, $cantidadUnidad = 1, $estado) {
         try {
-            $sets = ['nombre = ?'];
-            $params = [$nombre];
-            $checkAbrev = $this->conex->prepare("SHOW COLUMNS FROM unidad_medida LIKE 'abreviatura'");
-            $checkAbrev->execute();
-            if ($checkAbrev->rowCount() > 0) {
-                $sets[] = 'abreviatura = ?';
-                $params[] = $abreviatura;
-            }
-            $checkCant = $this->conex->prepare("SHOW COLUMNS FROM unidad_medida LIKE 'cantidad_unidad'");
-            $checkCant->execute();
-            if ($checkCant->rowCount() > 0) {
-                $sets[] = 'cantidad_unidad = ?';
-                $params[] = (int) $cantidadUnidad;
-            }
-            $sets[] = 'estado = ?';
-            $params[] = $estado;
-            $params[] = $id;
-            $query = "UPDATE unidad_medida SET " . implode(', ', $sets) . " WHERE codigo_media = ?";
+            $query = "UPDATE unidad_medida SET nombre = ?, abreviatura = ?, cantidad_unidad = ?, estado = ? WHERE codigo_media = ?";
             $stmt = $this->conex->prepare($query);
-            return $stmt->execute($params);
+            return $stmt->execute([
+                $nombre,
+                $abreviatura,
+                (int) $cantidadUnidad,
+                (int) $estado,
+                (int) $id
+            ]);
         } catch (PDOException $e) {
             return false;
         }

@@ -297,55 +297,55 @@ class pedidoModel extends ConectDB {
     /**
      * Ítems de un pedido con tipo inferido para edición.
      */
-    public function getItemsByPedido($id) {
-        try {
-            $query = "SELECT dp.*,
-                             pi.nombre_producto,
-                             s.nombre_servicio,
-                             s.precio AS precio_servicio,
-                             CASE
-                                 WHEN dp.codigo_producto IS NOT NULL THEN 'producto'
-                                 ELSE 'servicio'
-                             END AS tipo
-                      FROM detalle_pedido dp
-                      LEFT JOIN producto_insumo pi ON dp.codigo_producto = pi.codigo_producto
-                      LEFT JOIN servicio s ON dp.codigo_servicio = s.codigo_servicio
-                      WHERE dp.codigo_pedido = ?
-                      ORDER BY dp.codigo_detalle_pedido ASC";
-            $checkStmt = $this->conex->prepare("SHOW COLUMNS FROM detalle_pedido LIKE 'codigo_media'");
-            $checkStmt->execute();
-            if ($checkStmt->rowCount() > 0) {
-                $query = "SELECT dp.*,
-                                 pi.nombre_producto,
-                                 s.nombre_servicio,
-                                 s.precio AS precio_servicio,
-                                 um.nombre AS nombre_medida,
-                                 um.abreviatura AS abreviatura_medida,
-                                 CASE
-                                     WHEN dp.codigo_producto IS NOT NULL THEN 'producto'
-                                     ELSE 'servicio'
-                                 END AS tipo
-                      FROM detalle_pedido dp
-                      LEFT JOIN producto_insumo pi ON dp.codigo_producto = pi.codigo_producto
-                      LEFT JOIN servicio s ON dp.codigo_servicio = s.codigo_servicio
-                      LEFT JOIN unidad_medida um ON dp.codigo_media = um.codigo_media
-                      WHERE dp.codigo_pedido = ?
-                      ORDER BY dp.codigo_detalle_pedido ASC";
-            }
-            $stmt = $this->conex->prepare($query);
-            $stmt->execute([$id]);
-            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            foreach ($rows as &$row) {
-                if (!isset($row['nombre_medida'])) $row['nombre_medida'] = null;
-                if (!isset($row['abreviatura_medida'])) $row['abreviatura_medida'] = null;
-                if (!isset($row['codigo_media'])) $row['codigo_media'] = null;
-            }
-            return $rows;
-        } catch (PDOException $e) {
-            $this->logPdoError('getItemsByPedido', $e);
-            return [];
-        }
-    }
+     public function getItemsByPedido($id) {
+         try {
+             $query = "SELECT dp.*,
+                              pi.nombre_producto,
+                              s.nombre_servicio,
+                              s.precio AS precio_servicio,
+                              CASE
+                                  WHEN dp.codigo_producto IS NOT NULL THEN 'producto'
+                                  ELSE 'servicio'
+                              END AS tipo
+                       FROM detalle_pedido dp
+                       LEFT JOIN producto_insumo pi ON dp.codigo_producto = pi.codigo_producto
+                       LEFT JOIN servicio s ON dp.codigo_servicio = s.codigo_servicio
+                       WHERE dp.codigo_pedido = ?
+                       ORDER BY dp.codigo_detalle_pedido ASC";
+             $checkStmt = $this->conex->prepare("SHOW COLUMNS FROM detalle_pedido LIKE 'codigo_unidad_medida'");
+             $checkStmt->execute();
+             if ($checkStmt->rowCount() > 0) {
+                 $query = "SELECT dp.*,
+                                  pi.nombre_producto,
+                                  s.nombre_servicio,
+                                  s.precio AS precio_servicio,
+                                  um.nombre AS nombre_medida,
+                                  um.abreviatura AS abreviatura_medida,
+                                  CASE
+                                      WHEN dp.codigo_producto IS NOT NULL THEN 'producto'
+                                      ELSE 'servicio'
+                                  END AS tipo
+                       FROM detalle_pedido dp
+                       LEFT JOIN producto_insumo pi ON dp.codigo_producto = pi.codigo_producto
+                       LEFT JOIN servicio s ON dp.codigo_servicio = s.codigo_servicio
+                       LEFT JOIN unidad_medida um ON dp.codigo_unidad_medida = um.codigo_media
+                       WHERE dp.codigo_pedido = ?
+                       ORDER BY dp.codigo_detalle_pedido ASC";
+             }
+             $stmt = $this->conex->prepare($query);
+             $stmt->execute([$id]);
+             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+             foreach ($rows as &$row) {
+                 if (!isset($row['nombre_medida'])) $row['nombre_medida'] = null;
+                 if (!isset($row['abreviatura_medida'])) $row['abreviatura_medida'] = null;
+                 if (!isset($row['codigo_unidad_medida'])) $row['codigo_unidad_medida'] = null;
+             }
+             return $rows;
+         } catch (PDOException $e) {
+             $this->logPdoError('getItemsByPedido', $e);
+             return [];
+         }
+     }
 
     public function getClientesActivos() {
         try {
@@ -366,19 +366,40 @@ class pedidoModel extends ConectDB {
 
     public function getProductosActivos() {
         try {
-            $query = 'SELECT p.codigo_producto, p.nombre_producto, p.stock_actual FROM producto_insumo p WHERE p.estado = 1 ORDER BY p.nombre_producto ASC';
-            $checkStmt = $this->conex->prepare("SHOW COLUMNS FROM producto_insumo LIKE 'precio'");
-            $checkStmt->execute();
-            if ($checkStmt->rowCount() > 0) {
+            $checkMedia = $this->conex->prepare("SHOW COLUMNS FROM producto_insumo LIKE 'codigo_media'");
+            $checkMedia->execute();
+            $hasMedia = $checkMedia->rowCount() > 0;
+
+            if ($hasMedia) {
                 $query = 'SELECT p.codigo_producto, p.nombre_producto, p.stock_actual,
-                                 COALESCE(p.precio, 0) AS precio
-                          FROM producto_insumo p WHERE p.estado = 1 ORDER BY p.nombre_producto ASC';
+                                 COALESCE(p.precio, 0) AS precio,
+                                 p.codigo_media,
+                                 COALESCE(um.cantidad_unidad, 1) AS cantidad_unidad,
+                                 um.abreviatura AS abreviatura_medida,
+                                 um.nombre AS nombre_medida
+                          FROM producto_insumo p
+                          LEFT JOIN unidad_medida um ON p.codigo_media = um.codigo_media AND um.estado = 1
+                          WHERE p.estado = 1
+                          ORDER BY p.nombre_producto ASC';
+            } else {
+                $query = 'SELECT p.codigo_producto, p.nombre_producto, p.stock_actual,
+                                 COALESCE(p.precio, 0) AS precio,
+                                 1 AS cantidad_unidad
+                          FROM producto_insumo p
+                          WHERE p.estado = 1
+                          ORDER BY p.nombre_producto ASC';
             }
+
             $stmt = $this->conex->prepare($query);
             $stmt->execute();
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            if (!isset($rows[0]['precio'])) {
-                foreach ($rows as &$r) { $r['precio'] = 0; }
+            foreach ($rows as &$row) {
+                if (!isset($row['precio'])) $row['precio'] = 0;
+                if (!isset($row['codigo_media'])) $row['codigo_media'] = null;
+                if (!isset($row['cantidad_unidad'])) $row['cantidad_unidad'] = 1;
+                if (!isset($row['abreviatura_medida'])) $row['abreviatura_medida'] = null;
+                if (!isset($row['nombre_medida'])) $row['nombre_medida'] = null;
+                $row['cantidad_unidad'] = (int) $row['cantidad_unidad'];
             }
             return $rows;
         } catch (PDOException $e) {
@@ -539,13 +560,13 @@ class pedidoModel extends ConectDB {
     }
 
     private function insertarDetallesYDescontarStock(int $codigoPedido, array $items): float {
-        $checkStmt = $this->conex->prepare("SHOW COLUMNS FROM detalle_pedido LIKE 'codigo_media'");
+        $checkStmt = $this->conex->prepare("SHOW COLUMNS FROM detalle_pedido LIKE 'codigo_unidad_medida'");
         $checkStmt->execute();
         $hasCodigoMedia = $checkStmt->rowCount() > 0;
 
         if ($hasCodigoMedia) {
             $stmtDetalle = $this->conex->prepare(
-                'INSERT INTO detalle_pedido (codigo_pedido, codigo_producto, codigo_servicio, codigo_media, cantidad, precio_venta, subtotal)
+                'INSERT INTO detalle_pedido (codigo_pedido, codigo_producto, codigo_servicio, codigo_unidad_medida, cantidad, precio_venta, subtotal)
                  VALUES (?, ?, ?, ?, ?, ?, ?)'
             );
         } else {
@@ -579,7 +600,21 @@ class pedidoModel extends ConectDB {
             $subtotal = $this->formatearMonto($cantidad * $precioVenta);
             $montoTotal += $subtotal;
 
-            $codigoMedia = $item['codigo_media'] ?? null;
+            $codigoMedia = $item['codigo_unidad_medida'] ?? null;
+            if ($hasCodigoMedia && !empty($codigoMedia)) {
+                $stmtCheck = $this->conex->prepare('SELECT 1 FROM unidad_medida WHERE codigo_media = ?');
+                $stmtCheck->execute([(int) $codigoMedia]);
+                if (!$stmtCheck->fetchColumn()) {
+                    $codigoMedia = null;
+                }
+            }
+            if ($hasCodigoMedia && !empty($codigoMedia)) {
+                $stmtCheck = $this->conex->prepare('SELECT 1 FROM unidad_medida WHERE codigo_media = ?');
+                $stmtCheck->execute([(int) $codigoMedia]);
+                if (!$stmtCheck->fetchColumn()) {
+                    $codigoMedia = null;
+                }
+            }
             if ($hasCodigoMedia) {
                 $stmtDetalle->execute([
                     $codigoPedido,

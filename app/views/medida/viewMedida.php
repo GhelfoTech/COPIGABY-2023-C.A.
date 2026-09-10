@@ -23,6 +23,12 @@
     </header>
 
     <main class="p-8 flex-1 animate-fade-up">
+      <?php if (isset($_SESSION['medida_flash'])): ?>
+        <?php $flash = $_SESSION['medida_flash']; unset($_SESSION['medida_flash']); ?>
+        <div class="mb-6 p-4 rounded-lg border <?= $flash['status'] === 'success' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700' ?> font-bold text-sm">
+          <?= htmlspecialchars($flash['message']) ?>
+        </div>
+      <?php endif; ?>
       <div class="flex justify-between items-center mb-8">
         <div>
           <h1 class="text-2xl font-[900] text-gray-800">Unidades de Medida</h1>
@@ -47,6 +53,11 @@
               </tr>
             </thead>
             <tbody class="text-gray-700 font-semibold text-sm divide-y">
+              <?php if (empty($medidas)): ?>
+                <tr>
+                  <td colspan="6" class="px-6 py-8 text-center text-gray-400 italic">No hay unidades de medida registradas.</td>
+                </tr>
+              <?php endif; ?>
               <?php foreach ($medidas as $m): ?>
                 <tr class="hover:bg-gray-50/80 transition-colors">
                   <td class="px-6 py-4 font-black text-navy-dark">#<?= str_pad($m['codigo_media'], 3, '0', STR_PAD_LEFT) ?></td>
@@ -82,17 +93,17 @@
         </div>
         <form action="?url=medida&type=register" method="POST" class="p-6">
           <div class="mb-4">
-             <label class="block text-xs font-black text-gray-400 uppercase mb-1">Nombre (ej: Kilos, Litros, Unidad) <span class="text-red-500">*</span></label>
-             <input type="text" name="nombre" required class="w-full px-4 py-2 bg-gray-50 border rounded-lg focus:border-orange outline-none font-bold text-sm" placeholder="Kilos">
-          </div>
-          <div class="mb-4">
-            <label class="block text-xs font-black text-gray-400 uppercase mb-1">Abreviatura</label>
-             <input type="text" name="abreviatura" maxlength="10" class="w-full px-4 py-2 bg-gray-50 border rounded-lg focus:border-orange outline-none font-bold text-sm" placeholder="Kg">
-          </div>
-          <div class="mb-4">
-             <label class="block text-xs font-black text-gray-400 uppercase mb-1">Unidades por Caja <span class="text-xs text-gray-400 font-normal">(ej: 12 para docena, 1 para unidad suelta)</span></label>
-             <input type="number" name="cantidad_unidad" min="1" value="1" required class="w-full px-4 py-2 bg-gray-50 border rounded-lg focus:border-orange outline-none font-bold text-sm">
-          </div>
+              <label class="block text-xs font-black text-gray-400 uppercase mb-1">Nombre (ej: Metro, Hoja, Unidad) <span class="text-red-500">*</span></label>
+              <input type="text" name="nombre" required class="w-full px-4 py-2 bg-gray-50 border rounded-lg focus:border-orange outline-none font-bold text-sm" placeholder="Metro">
+           </div>
+           <div class="mb-4">
+             <label class="block text-xs font-black text-gray-400 uppercase mb-1">Abreviatura</label>
+              <input type="text" name="abreviatura" maxlength="10" class="w-full px-4 py-2 bg-gray-50 border rounded-lg focus:border-orange outline-none font-bold text-sm" placeholder="m">
+           </div>
+           <div class="mb-4">
+              <label class="block text-xs font-black text-gray-400 uppercase mb-1">Unidades por Caja <span class="text-xs text-gray-400 font-normal">(ej: 1 para Metro/Unidad, 12 para Docena, 500 para Resma)</span></label>
+              <input type="number" name="cantidad_unidad" min="1" value="1" required class="w-full px-4 py-2 bg-gray-50 border rounded-lg focus:border-orange outline-none font-bold text-sm">
+           </div>
           <div class="flex justify-end gap-3 mt-8">
             <button type="button" onclick="toggleModal()" class="px-6 py-2 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-lg">Cancelar</button>
             <button type="submit" class="px-8 py-2 text-sm font-black bg-navy-dark text-white rounded-lg hover:bg-navy shadow-lg transition-all">Guardar</button>
@@ -114,16 +125,16 @@
           <input type="hidden" name="codigo_media" id="edit_codigo">
           <div class="mb-4">
              <label class="block text-xs font-black text-gray-400 uppercase mb-1">Nombre <span class="text-red-500">*</span></label>
-             <input type="text" name="nombre" id="edit_nombre" required class="w-full px-4 py-2 bg-gray-50 border rounded-lg focus:border-orange outline-none font-bold text-sm" placeholder="Kilos">
-          </div>
-          <div class="mb-4">
-            <label class="block text-xs font-black text-gray-400 uppercase mb-1">Abreviatura</label>
-             <input type="text" name="abreviatura" id="edit_abreviatura" maxlength="10" class="w-full px-4 py-2 bg-gray-50 border rounded-lg focus:border-orange outline-none font-bold text-sm" placeholder="Kg">
-          </div>
-          <div class="mb-4">
-             <label class="block text-xs font-black text-gray-400 uppercase mb-1">Unidades por Caja</label>
-             <input type="number" name="cantidad_unidad" id="edit_cantidad_unidad" min="1" value="1" required class="w-full px-4 py-2 bg-gray-50 border rounded-lg focus:border-orange outline-none font-bold text-sm">
-          </div>
+              <input type="text" name="nombre" id="edit_nombre" required class="w-full px-4 py-2 bg-gray-50 border rounded-lg focus:border-orange outline-none font-bold text-sm" placeholder="Metro">
+           </div>
+           <div class="mb-4">
+             <label class="block text-xs font-black text-gray-400 uppercase mb-1">Abreviatura</label>
+              <input type="text" name="abreviatura" id="edit_abreviatura" maxlength="10" class="w-full px-4 py-2 bg-gray-50 border rounded-lg focus:border-orange outline-none font-bold text-sm" placeholder="m">
+           </div>
+           <div class="mb-4">
+              <label class="block text-xs font-black text-gray-400 uppercase mb-1">Unidades por Caja</label>
+              <input type="number" name="cantidad_unidad" id="edit_cantidad_unidad" min="1" value="1" required class="w-full px-4 py-2 bg-gray-50 border rounded-lg focus:border-orange outline-none font-bold text-sm">
+           </div>
           <div class="flex items-center gap-2 mb-4">
               <input type="checkbox" name="estado" id="edit_estado" class="w-4 h-4 accent-orange">
               <label class="text-sm font-bold text-navy-dark uppercase tracking-tight">Activo</label>
